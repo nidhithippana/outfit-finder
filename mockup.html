@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OutfitFinder AI</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f0f0f;
+      color: #f0f0f0;
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      border-bottom: 1px solid #222;
+      position: sticky;
+      top: 0;
+      background: #0f0f0f;
+      z-index: 10;
+    }
+    .logo {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: #a78bfa; }
+    nav ul {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+    nav ul li a {
+      color: #aaa;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    nav ul li a:hover { color: #fff; }
+    .nav-cta {
+      background: #a78bfa;
+      color: #0f0f0f !important;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    /* HERO */
+    .hero {
+      text-align: center;
+      padding: 80px 24px 48px;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.78rem;
+      color: #a78bfa;
+      margin-bottom: 24px;
+      letter-spacing: 0.5px;
+    }
+    .hero h1 {
+      font-size: clamp(2.2rem, 5vw, 3.8rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1px;
+      margin-bottom: 20px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, #a78bfa, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      color: #888;
+      font-size: 1.1rem;
+      max-width: 480px;
+      margin: 0 auto 48px;
+      line-height: 1.6;
+    }
+
+    /* UPLOAD */
+    .upload-section {
+      max-width: 620px;
+      margin: 0 auto 64px;
+      padding: 0 24px;
+    }
+    .upload-box {
+      border: 2px dashed #333;
+      border-radius: 20px;
+      padding: 56px 32px;
+      text-align: center;
+      background: #161616;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+    .upload-box:hover {
+      border-color: #a78bfa;
+      background: #1a1625;
+    }
+    .upload-box input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .upload-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+    .upload-box h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .upload-box p {
+      color: #666;
+      font-size: 0.85rem;
+    }
+    .upload-box p span {
+      color: #a78bfa;
+      font-weight: 500;
+    }
+
+    /* PREVIEW STATE (simulated) */
+    .upload-preview {
+      border: 2px solid #2d2d2d;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #161616;
+    }
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid #222;
+      font-size: 0.85rem;
+      color: #888;
+    }
+    .preview-header strong { color: #f0f0f0; }
+    .preview-header button {
+      background: none;
+      border: 1px solid #333;
+      color: #aaa;
+      padding: 4px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.78rem;
+    }
+    .preview-img-wrap {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+      background: #111;
+    }
+    .preview-img {
+      width: 220px;
+      height: 300px;
+      border-radius: 12px;
+      object-fit: cover;
+      background: linear-gradient(135deg, #1e1e2e, #2e1e3e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 5rem;
+    }
+    /* Detection overlays */
+    .tag {
+      position: absolute;
+      background: #a78bfa;
+      color: #0f0f0f;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 10px;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .tag::before {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: #fff;
+      border-radius: 50%;
+      border: 2px solid #a78bfa;
+    }
+    .tag-jacket { top: 68px; left: 24px; }
+    .tag-jacket::before { right: -14px; top: 50%; transform: translateY(-50%); }
+    .tag-pants { bottom: 90px; right: 24px; }
+    .tag-pants::before { left: -14px; top: 50%; transform: translateY(-50%); }
+    .tag-shoes { bottom: 24px; left: 50%; transform: translateX(-50%); }
+    .tag-shoes::before { top: -14px; left: 50%; transform: translateX(-50%); }
+
+    .analyze-btn {
+      display: block;
+      width: calc(100% - 48px);
+      margin: 0 24px 24px;
+      padding: 16px;
+      background: linear-gradient(135deg, #a78bfa, #7c3aed);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      transition: opacity 0.2s;
+    }
+    .analyze-btn:hover { opacity: 0.9; }
+
+    /* RESULTS */
+    .results-section {
+      max-width: 1100px;
+      margin: 0 auto 80px;
+      padding: 0 24px;
+    }
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+    }
+    .results-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    .results-header h2 span { color: #a78bfa; }
+    .filter-pills {
+      display: flex;
+      gap: 8px;
+    }
+    .pill {
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      border: 1px solid #333;
+      background: transparent;
+      color: #aaa;
+      transition: all 0.2s;
+    }
+    .pill.active {
+      background: #a78bfa;
+      border-color: #a78bfa;
+      color: #0f0f0f;
+      font-weight: 600;
+    }
+
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    .product-card {
+      background: #161616;
+      border: 1px solid #222;
+      border-radius: 16px;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+      cursor: pointer;
+    }
+    .product-card:hover {
+      border-color: #a78bfa;
+      transform: translateY(-2px);
+    }
+    .card-img {
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      background: #1e1e1e;
+    }
+    .card-body { padding: 16px; }
+    .card-tag {
+      font-size: 0.7rem;
+      color: #a78bfa;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+    .card-brand {
+      font-size: 0.8rem;
+      color: #666;
+      margin-bottom: 12px;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-price {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #f0f0f0;
+    }
+    .match-badge {
+      font-size: 0.72rem;
+      background: #1a2a1a;
+      color: #4ade80;
+      border: 1px solid #2a4a2a;
+      padding: 3px 8px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .card-links {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .card-link {
+      flex: 1;
+      text-align: center;
+      padding: 8px;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .card-link:hover { opacity: 0.85; }
+    .link-primary {
+      background: #a78bfa;
+      color: #0f0f0f;
+    }
+    .link-secondary {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      color: #ccc;
+    }
+
+    /* HOW IT WORKS */
+    .how-section {
+      border-top: 1px solid #1e1e1e;
+      padding: 64px 24px;
+      text-align: center;
+    }
+    .how-section h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 48px;
+    }
+    .steps {
+      display: flex;
+      gap: 32px;
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .step {
+      flex: 1;
+      min-width: 180px;
+      max-width: 220px;
+    }
+    .step-num {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #a78bfa, #7c3aed);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      margin: 0 auto 16px;
+    }
+    .step h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 8px; }
+    .step p { font-size: 0.82rem; color: #666; line-height: 1.5; }
+
+    footer {
+      text-align: center;
+      padding: 32px;
+      color: #444;
+      font-size: 0.8rem;
+      border-top: 1px solid #1a1a1a;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="logo">Outfit<span>Finder</span> AI</div>
+    <ul>
+      <li><a href="#">How it works</a></li>
+      <li><a href="#">Pricing</a></li>
+      <li><a href="#" class="nav-cta">Try Free</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">✦ Powered by AI Vision</div>
+    <h1>Upload an outfit.<br/>Shop the <em>exact look.</em></h1>
+    <p>Drop any photo — street style, runway, or a screenshot. We'll find every piece and link you to the best places to buy.</p>
+  </section>
+
+  <!-- UPLOAD + PREVIEW (showing both states side by side for mockup) -->
+  <section class="upload-section">
+
+    <!-- Empty state -->
+    <div class="upload-box" style="margin-bottom: 24px;">
+      <input type="file" accept="image/*" />
+      <div class="upload-icon">🖼️</div>
+      <h3>Drop your outfit photo here</h3>
+      <p>or <span>browse to upload</span> · JPG, PNG, WEBP up to 10MB</p>
+    </div>
+
+    <!-- Filled / analyzing state -->
+    <div class="upload-preview">
+      <div class="preview-header">
+        <span><strong>outfit_inspo.jpg</strong> · 2.4 MB</span>
+        <button>✕ Remove</button>
+      </div>
+      <div class="preview-img-wrap">
+        <div class="preview-img">👗</div>
+        <!-- Detection tags -->
+        <div class="tag tag-jacket">Jacket</div>
+        <div class="tag tag-pants">Trousers</div>
+        <div class="tag tag-shoes">Sneakers</div>
+      </div>
+      <button class="analyze-btn">✦ Find Products →</button>
+    </div>
+
+  </section>
+
+  <!-- RESULTS -->
+  <section class="results-section">
+    <div class="results-header">
+      <h2>Found <span>9 products</span> from your outfit</h2>
+      <div class="filter-pills">
+        <button class="pill active">All</button>
+        <button class="pill">Jacket</button>
+        <button class="pill">Trousers</button>
+        <button class="pill">Sneakers</button>
+      </div>
+    </div>
+
+    <div class="products-grid">
+
+      <div class="product-card">
+        <div class="card-img" style="background: #1a1a2e;">🧥</div>
+        <div class="card-body">
+          <div class="card-tag">Jacket</div>
+          <div class="card-title">Oversized Leather Moto Jacket</div>
+          <div class="card-brand">ASOS Design</div>
+          <div class="card-footer">
+            <span class="card-price">$89</span>
+            <span class="match-badge">97% match</span>
+          </div>
+          <div class="card-links">
+            <a href="#" class="card-link link-primary">Shop ASOS</a>
+            <a href="#" class="card-link link-secondary">3 more →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <div class="card-img" style="background: #1a2e1a;">🧥</div>
+        <div class="card-body">
+          <div class="card-tag">Jacket</div>
+          <div class="card-title">Faux Leather Biker Jacket</div>
+          <div class="card-brand">Zara</div>
+          <div class="card-footer">
+            <span class="card-price">$69</span>
+            <span class="match-badge">91% match</span>
+          </div>
+          <div class="card-links">
+            <a href="#" class="card-link link-primary">Shop Zara</a>
+            <a href="#" class="card-link link-secondary">2 more →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <div class="card-img" style="background: #2e1a1a;">👖</div>
+        <div class="card-body">
+          <div class="card-tag">Trousers</div>
+          <div class="card-title">Wide Leg Tailored Trousers</div>
+          <div class="card-brand">H&amp;M</div>
+          <div class="card-footer">
+            <span class="card-price">$34</span>
+            <span class="match-badge">94% match</span>
+          </div>
+          <div class="card-links">
+            <a href="#" class="card-link link-primary">Shop H&amp;M</a>
+            <a href="#" class="card-link link-secondary">5 more →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <div class="card-img" style="background: #1e1a2e;">👟</div>
+        <div class="card-body">
+          <div class="card-tag">Sneakers</div>
+          <div class="card-title">Air Force 1 '07 White</div>
+          <div class="card-brand">Nike</div>
+          <div class="card-footer">
+            <span class="card-price">$110</span>
+            <span class="match-badge">99% match</span>
+          </div>
+          <div class="card-links">
+            <a href="#" class="card-link link-primary">Shop Nike</a>
+            <a href="#" class="card-link link-secondary">4 more →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <div class="card-img" style="background: #2e2a1a;">👟</div>
+        <div class="card-body">
+          <div class="card-tag">Sneakers</div>
+          <div class="card-title">Classic Leather Sneaker</div>
+          <div class="card-brand">Reebok</div>
+          <div class="card-footer">
+            <span class="card-price">$80</span>
+            <span class="match-badge">88% match</span>
+          </div>
+          <div class="card-links">
+            <a href="#" class="card-link link-primary">Shop Reebok</a>
+            <a href="#" class="card-link link-secondary">2 more →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <div class="card-img" style="background: #1a2a2e;">👖</div>
+        <div class="card-body">
+          <div class="card-tag">Trousers</div>
+          <div class="card-title">Pleated Straight Trousers</div>
+          <div class="card-brand">Mango</div>
+          <div class="card-footer">
+            <span class="card-price">$49</span>
+            <span class="match-badge">85% match</span>
+          </div>
+          <div class="card-links">
+            <a href="#" class="card-link link-primary">Shop Mango</a>
+            <a href="#" class="card-link link-secondary">3 more →</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how-section">
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Upload a photo</h3>
+        <p>Any outfit photo — screenshot, selfie, or runway image.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>AI detects each piece</h3>
+        <p>Our model identifies every clothing item and accessory in the image.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Shop the look</h3>
+        <p>Get ranked product matches from top retailers with direct buy links.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>© 2026 OutfitFinder AI · All rights reserved</footer>
+
+</body>
+</html>
