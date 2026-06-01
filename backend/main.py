@@ -25,6 +25,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 init_db()
 
 model     = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
